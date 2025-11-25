@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>链接集合</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- 头部信息 -->
+            <div class="text-center mb-12" id="pageHeader">
+                <div class="w-20 h-20 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-layer-group text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2" id="pageTitle">我的链接集合</h1>
+                <p class="text-gray-600" id="pageSubtitle">点击下方链接访问相关内容</p>
+            </div>
+
+            <!-- 链接卡片区域 -->
+            <div id="linksContainer" class="space-y-4">
+                    <!-- 链接将通过JavaScript动态生成 -->
+                </div>
+
+                <!-- 统计信息 -->
+                <div class="mt-8 text-center text-gray-500 text-sm">
+                <p>本页面包含 <span id="linkCount">0</span> 个链接</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LinkPageRenderer {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.loadAndRenderPage();
+            }
+
+            loadAndRenderPage() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const shortLinkId = urlParams.get('id');
+                
+                if (!shortLinkId) {
+                    document.getElementById('pageTitle').textContent = '无效链接';
+                    return;
+                }
+
+                const pageData = localStorage.getItem(`linkPage_${shortLinkId}`);
+                
+                if (!pageData) {
+                    document.getElementById('pageTitle').textContent = '链接不存在';
+                    return;
+                }
+
+                const data = JSON.parse(pageData);
+                this.renderPage(data);
+            }
+
+            renderPage(data) {
+                document.title = data.title;
+                document.getElementById('pageTitle').textContent = data.title;
+                document.getElementById('linkCount').textContent = data.links.length;
+                this.renderLinks(data.links);
+            }
+
+            renderLinks(links) {
+                const container = document.getElementById('linksContainer');
+                
+                container.innerHTML = links.map((link, index) => `
+                    <a href="${link.url}" target="_blank" class="block">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-semibold">${index + 1}</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-gray-800 font-semibold text-lg">${link.title}</h3>
+                                <p class="text-gray-600 text-sm mt-1">${link.description}</p>
+                                <p class="text-gray-400 text-xs mt-2 font-mono">${link.url}</p>
+                            </div>
+                            <div class="text-gray-400">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            new LinkPageRenderer();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,523 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多链接短链生成器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- 头部 -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-layer-group text-blue-500 mr-3"></i>
+                多链接短链生成器
+            </h1>
+            <p class="text-gray-600 text-lg">输入多个链接，生成一个包含所有链接的短链</p>
+        </header>
+
+        <!-- 主功能区域 -->
+        <div class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+                <!-- 链接输入区域 -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-medium mb-3">
+                <i class="fas fa-link mr-2"></i>请输入多个链接（每行一个）
+            </label>
+            <textarea 
+                id="linksInput" 
+                rows="6"
+                placeholder="https://example.com/page1
+https://example.com/page2  
+https://example.com/page3"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
+            ></textarea>
+            <p class="text-gray-500 text-xs mt-2">每个链接单独一行，支持http://和https://</p>
+        </div>
+
+        <!-- 标题输入 -->
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-medium mb-2">
+                <i class="fas fa-heading mr-2"></i>页面标题（可选）
+            </label>
+            <input 
+                type="text" 
+                id="pageTitle" 
+                placeholder="我的链接集合"
+                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+        </div>
+
+        <!-- 自定义后缀 -->
+        <div class="mb-6">
+            <label class="block text-gray-700 text-sm font-medium mb-2">
+                <i class="fas fa-edit mr-2"></i>自定义后缀（可选）
+            </label>
+            <div class="flex items-center">
+                <span class="px-4 py-3 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600">
+                    short.ly/
+                </span>
+                <input 
+                    type="text" 
+                    id="customSlug" 
+                    placeholder="my-links"
+                    class="flex-1 px-4 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+            </div>
+        </div>
+
+        <button 
+            id="generateBtn"
+            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105"
+        >
+            <i class="fas fa-magic mr-2"></i>生成短链接
+        </button>
+    </div>
+
+    <!-- 结果展示区域 -->
+    <div id="resultSection" class="hidden">
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                短链接生成成功！
+            </h2>
+            <div class="flex items-center space-x-4 mb-6">
+                <input 
+                    type="text" 
+                    id="shortUrlResult" 
+                    readonly
+                    class="flex-1 px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-700 font-mono text-lg"
+                >
+                <button 
+                    id="copyBtn"
+                    class="bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition-all duration-200"
+                >
+                    <i class="fas fa-copy mr-2"></i>复制
+                </button>
+            </div>
+            <div class="text-center">
+                <a 
+                    href="#" 
+                    id="testLink" 
+                    target="_blank"
+                    class="inline-flex items-center text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                >
+                    <i class="fas fa-external-link-alt mr-2"></i>测试链接
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 历史记录区域 -->
+<div class="bg-white rounded-2xl shadow-xl p-8">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-history mr-2"></i>历史记录
+    </h2>
+    <button 
+        id="clearHistoryBtn"
+        class="text-red-500 hover:text-red-600 transition-colors duration-200"
+    >
+        <i class="fas fa-trash mr-1"></i>清空记录
+    </button>
+</div>
+<div id="historyList" class="space-y-4">
+    <!-- 历史记录将通过JavaScript动态生成 -->
+</div>
+</div>
+</div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
+<code_end>
+
+<code_start project_name=多链接短链生成器 filename=app.js title=短链接生成器逻辑 entrypoint=false runnable=false project_final_file=false>
+class MultiLinkShortener {
+    constructor() {
+        this.historyKey = 'multiLinkHistory';
+        this.init();
+    }
+
+    init() {
+        this.bindEvents();
+        this.loadHistory();
+    }
+
+    bindEvents() {
+        document.getElementById('generateBtn').addEventListener('click', () => this.generateShortLink());
+        document.getElementById('copyBtn').addEventListener('click', () => this.copyToClipboard());
+        document.getElementById('clearHistoryBtn').addEventListener('click', () => this.clearHistory());
+    }
+
+    generateShortLink() {
+        const linksInput = document.getElementById('linksInput').value.trim();
+        const pageTitle = document.getElementById('pageTitle').value.trim() || '我的链接集合';
+        const customSlug = document.getElementById('customSlug').value.trim();
+
+        if (!linksInput) {
+            this.showError('请输入至少一个链接');
+            return;
+        }
+
+        // 解析多行链接
+        const links = this.parseLinks(linksInput);
+        
+        if (links.length === 0) {
+            this.showError('没有检测到有效的链接');
+            return;
+        }
+
+        // 生成短链接和链接页面数据
+        const shortLink = this.createShortLink(customSlug);
+        const linkPageData = this.createLinkPageData(shortLink, pageTitle, links);
+        
+        this.displayResult(shortLink);
+        this.saveToHistory(shortLink, pageTitle, links);
+        this.saveLinkPageData(shortLink, linkPageData);
+    }
+
+    parseLinks(input) {
+        const lines = input.split('\n');
+        const validLinks = [];
+        
+        for (let line of lines) {
+            const url = line.trim();
+            if (url && this.validateUrl(url)) {
+                validLinks.push({
+                    url: url,
+                    title: this.extractTitleFromUrl(url),
+                    description: this.generateDescription(url)
+                });
+            }
+        }
+        
+        return validLinks;
+    }
+
+    validateUrl(url) {
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    extractTitleFromUrl(url) {
+        try {
+            const urlObj = new URL(url);
+            const path = urlObj.pathname.split('/').pop() || '首页';
+            return path.charAt(0).toUpperCase() + path.slice(1);
+        } catch {
+            return '未知页面';
+        }
+    }
+
+    generateDescription(url) {
+        if (url.includes('github.com')) return 'GitHub仓库页面';
+        if (url.includes('docs')) return '文档页面';
+        if (url.includes('contact')) return '联系我们页面';
+        if (url.includes('download')) return '下载页面';
+        return '相关页面';
+    }
+
+    createShortLink(customSlug) {
+        const baseUrl = 'https://short.ly/';
+        
+        if (customSlug) {
+            return baseUrl + this.sanitizeSlug(customSlug);
+        } else {
+            const randomSlug = Math.random().toString(36).substring(2, 8);
+            return baseUrl + randomSlug;
+    }
+
+    sanitizeSlug(slug) {
+        return slug.toLowerCase().replace(/[^a-z0-9-_]/g, '');
+        }
+    }
+
+    createLinkPageData(shortLink, title, links) {
+        return {
+            id: shortLink,
+            title: title,
+            links: links,
+            createdAt: new Date().toISOString()
+        };
+    }
+
+    saveLinkPageData(shortLink, data) {
+        localStorage.setItem(`linkPage_${shortLink}`, JSON.stringify(data));
+    }
+
+    displayResult(shortLink) {
+        const resultSection = document.getElementById('resultSection');
+        const shortUrlInput = document.getElementById('shortUrlResult');
+        const testLink = document.getElementById('testLink');
+
+        shortUrlInput.value = shortLink;
+        testLink.href = `/link-page.html?id=${encodeURIComponent(shortLink)}`;
+        
+        resultSection.classList.remove('hidden');
+        setTimeout(() => {
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    }
+
+    copyToClipboard() {
+        const shortUrlInput = document.getElementById('shortUrlResult');
+        
+        shortUrlInput.select();
+        shortUrlInput.setSelectionRange(0, 99999);
+        
+        try {
+            navigator.clipboard.writeText(shortUrlInput.value).then(() => {
+                this.showSuccess('短链接已复制到剪贴板！');
+            });
+        } catch (err) {
+            document.execCommand('copy');
+            this.showSuccess('短链接已复制到剪贴板！');
+        }
+    }
+
+    saveToHistory(shortLink, title, links) {
+        const history = this.getHistory();
+        const historyItem = {
+            id: Date.now(),
+            shortLink: shortLink,
+            title: title,
+            linkCount: links.length,
+            createdAt: new Date().toLocaleString()
+        };
+
+        history.unshift(historyItem);
+        if (history.length > 50) history.pop();
+        
+        localStorage.setItem(this.historyKey, JSON.stringify(history));
+        this.loadHistory();
+    }
+
+    getHistory() {
+        const history = localStorage.getItem(this.historyKey);
+        return history ? JSON.parse(history) : [];
+    }
+
+    loadHistory() {
+        const history = this.getHistory();
+        const historyList = document.getElementById('historyList');
+        
+        if (history.length === 0) {
+            historyList.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-inbox text-4xl mb-4"></i>
+                    <p>暂无历史记录</p>
+                </div>
+            `;
+            return;
+        }
+
+        historyList.innerHTML = history.map(item => `
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex-1">
+                    <div class="flex items-center space-x-3 mb-2">
+                        <span class="font-mono text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                            ${item.shortLink}
+                        </span>
+                        <span class="text-xs text-gray-500">
+                            ${item.createdAt}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-folder mr-1 text-green-500"></i>
+                        ${item.title} (${item.linkCount}个链接)
+                    </p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="shortLinkGenerator.copyHistoryLink('${item.shortLink}')" 
+                                class="text-blue-500 hover:text-blue-600 transition-colors duration-200"
+                        >
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button onclick="shortLinkGenerator.deleteHistoryItem(${item.id})" 
+                                class="text-red-500 hover:text-red-600 transition-colors duration-200"
+                        >
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+    }
+
+    copyHistoryLink(link) {
+        navigator.clipboard.writeText(link).then(() => {
+            this.showSuccess('短链接已复制！');
+        });
+    }
+
+    deleteHistoryItem(id) {
+        const history = this.getHistory().filter(item => item.id !== id);
+        localStorage.setItem(this.historyKey, JSON.stringify(history));
+        this.loadHistory();
+    }
+
+    clearHistory() {
+        if (confirm('确定要清空所有历史记录吗？')) {
+            localStorage.removeItem(this.historyKey);
+            this.loadHistory();
+            this.showSuccess('历史记录已清空');
+        }
+    }
+
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        const bgColor = type === 'error' ? 'bg-red-500' : 'bg-green-500';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 z-50`;
+        notification.innerHTML = `
+            <div class="flex items-center space-x-2">
+                <i class="fas fa-${type === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i>
+                <span>${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
+}
+
+const shortLinkGenerator = new MultiLinkShortener();
+<code_end>
+
+<code_start project_name=多链接短链生成器 filename=link-page.html title=链接集合展示页面 entrypoint=false runnable=false project_final_file=true>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>链接集合</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <!-- 头部信息 -->
+            <div class="text-center mb-12" id="pageHeader">
+                <div class="w-20 h-20 mx-auto mb-4 bg-blue-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-layer-group text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2" id="pageTitle">我的链接集合</h1>
+                <p class="text-gray-600" id="pageSubtitle">点击下方链接访问相关内容</p>
+            </div>
+
+            <!-- 链接卡片区域 -->
+            <div id="linksContainer" class="space-y-4">
+                <!-- 链接将通过JavaScript动态生成 -->
+            </div>
+
+            <!-- 统计信息 -->
+            <div class="mt-8 text-center text-gray-500 text-sm">
+                <p>本页面包含 <span id="linkCount">0</span> 个链接</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class LinkPageRenderer {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.loadAndRenderPage();
+            }
+
+            loadAndRenderPage() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const shortLinkId = urlParams.get('id');
+                
+                if (!shortLinkId) {
+                    this.showError('无效的链接');
+                    return;
+                }
+
+                const pageData = localStorage.getItem(`linkPage_${shortLinkId}`);
+                
+                if (!pageData) {
+                    this.showError('链接不存在或已过期');
+                    return;
+                }
+
+                const data = JSON.parse(pageData);
+                this.renderPage(data);
+            }
+
+            renderPage(data) {
+                // 更新页面标题
+                document.title = data.title;
+                document.getElementById('pageTitle').textContent = data.title;
+                document.getElementById('linkCount').textContent = data.links.length;
+                
+                this.renderLinks(data.links);
+            }
+
+            renderLinks(links) {
+                const container = document.getElementById('linksContainer');
+                
+                container.innerHTML = links.map((link, index) => `
+                    <a href="${link.url}" target="_blank" class="block">
+                        <div class="bg-white rounded-xl p-6 border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                            <div class="flex items-center space-x-4">
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-blue-600 font-semibold">${index + 1}</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-gray-800 font-semibold text-lg">${link.title}</h3>
+                                <p class="text-gray-600 text-sm mt-1">${link.description}</p>
+                                <p class="text-gray-400 text-xs mt-2 font-mono">${link.url}</p>
+                            </div>
+                            <div class="text-gray-400">
+                                <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+                `).join('');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            new LinkPageRenderer();
+        });
+    </script>
+</body>
+</html>
+<code_end>
+
+这个多链接短链生成器的主要功能特点：
+
+1. **多链接输入**：支持在文本框中输入多个链接，每行一个链接
+2. **智能解析**：自动验证链接有效性并提取标题和描述
+3. **单短链输出**：无论输入多少个链接，最终只生成一条短链接
+4. **集合页面**：短链接指向一个美观的链接集合展示页面
+5. **历史管理**：完整的生成记录保存和检索功能
+6. **数据持久化**：使用localStorage存储所有数据
+
+使用方法：在文本框中输入多个链接，点击生成即可获得一条短链接，用户点击该短链接会看到所有链接的集合页面。
